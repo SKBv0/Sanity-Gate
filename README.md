@@ -2,6 +2,7 @@
 
 Scans your project for unused files, security issues, dependencies, and more. Outputs compact reports in three formats: plain text, JSON, or ready-to-paste prompt. Web UI + CLI. Doesn't fix anything automatically - just reports what needs attention.
 
+
 ## What It Checks
 
 - **Git**: Uncommitted changes
@@ -21,7 +22,7 @@ Scans your project for unused files, security issues, dependencies, and more. Ou
 ## Installation
 
 ```bash
-git clone https://github.com/<you>/sanity-gate.git
+git clone https://github.com/SKBv0/Sanity-Gate.git
 cd sanity-gate
 npm install
 npm link  # Optional: enables global CLI access (use `npx sanity-gate scan` from any directory)
@@ -66,9 +67,12 @@ SANITY_GATE_ENFORCE_ROOT=false
 
 ### Web UI
 
+
+
 ```bash
 npm run dev
 ```
+<img width="20%" height="20%" alt="image" src="https://github.com/user-attachments/assets/a9959637-0f0b-4fed-8b43-ae0a7e1776b8" />
 
 Open [http://localhost:3000](http://localhost:3000) and scan your project.
 
