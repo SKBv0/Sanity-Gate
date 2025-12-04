@@ -195,31 +195,48 @@ export async function scanProject(
   const issues: Issue[] = [];
   log('info', 'scan', 'Starting scan checks', { path: resolvedPath });
 
-  // 1. Git Status Check
-  try {
-    log('info', 'scan', 'Checking git status');
-    const gitStartTime = Date.now();
-    const { stdout } = await execAsync('git status --porcelain', { cwd: resolvedPath });
-    const gitDuration = Date.now() - gitStartTime;
-    if (stdout.trim()) {
-      const uncommittedFiles = stdout.trim().split('\n').length;
-      log('info', 'scan', 'Git status check completed', { 
-        uncommittedFiles, 
-        duration: gitDuration 
+  // 1. Git Status Check (only when .git exists under scanned directory)
+  const gitDir = path.join(resolvedPath, '.git');
+  const gitExists = await fs.promises
+    .access(gitDir)
+    .then(() => true)
+    .catch(() => false);
+
+  if (gitExists) {
+    try {
+      log('info', 'scan', 'Checking git status');
+      const gitStartTime = Date.now();
+      const gitEnv = {
+        ...process.env,
+        GIT_CEILING_DIRECTORIES: resolvedPath
+      };
+      const { stdout } = await execAsync('git status --porcelain', {
+        cwd: resolvedPath,
+        env: gitEnv
       });
-      issues.push({
-        id: 'git-dirty-tree',
-        category: 'git',
-        type: 'UNCOMMITTED_CHANGES',
-        message: `Working tree has ${uncommittedFiles} uncommitted change(s). Commit or stash before deployment.`,
-        severity: 'warning',
-        snippet: stdout.split('\n').slice(0, 5).join('\n'),
-        suggestedAction: 'commit or stash changes'
-      });
+      const gitDuration = Date.now() - gitStartTime;
+      if (stdout.trim()) {
+        const uncommittedFiles = stdout.trim().split('\n').length;
+        log('info', 'scan', 'Git status check completed', { 
+          uncommittedFiles, 
+          duration: gitDuration 
+        });
+        issues.push({
+          id: 'git-dirty-tree',
+          category: 'git',
+          type: 'UNCOMMITTED_CHANGES',
+          message: `Working tree has ${uncommittedFiles} uncommitted change(s). Commit or stash before deployment.`,
+          severity: 'warning',
+          snippet: stdout.split('\n').slice(0, 5).join('\n'),
+          suggestedAction: 'commit or stash changes'
+        });
+      }
+    } catch (error: unknown) {
+      const err = toError(error);
+      log('debug', 'scan', 'Git check skipped', { error: err.message || 'Not a git repo' });
     }
-  } catch (error: unknown) {
-    const err = toError(error);
-    log('debug', 'scan', 'Git check skipped', { error: err.message || 'Not a git repo' });
+  } else {
+    log('debug', 'scan', 'Git check skipped', { reason: 'no .git directory in target path' });
   }
 
   // 2. File System Scan
